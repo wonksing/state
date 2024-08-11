@@ -12,126 +12,201 @@ type TxStateMachine struct {
 	stateMachine *internal.TxStateMachine `gorm:"-:all" json:"-"`
 }
 
-// SetState sets newState to underlying State. It implements state.OnTxStateChanged function.
-// Avoid calling this method directly.
-func (e *TxStateMachine) SetState(newState types.TxState) error {
+// AssignState sets newState to underlying State. It implements state.OnTxStateChanged function.
+// DO NOT CALL this method directly.
+func (e *TxStateMachine) AssignState(newState types.TxState) error {
 	e.State = newState
 	return nil
 }
 
-func (e *TxStateMachine) SmIsState(s types.TxState) bool {
+func (e *TxStateMachine) EqualSm(s types.TxState) bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
-	return e.stateMachine.State == s
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
+	return e.stateMachine.Equal(s)
 }
 
-func (e *TxStateMachine) SmIsPendingKind() bool {
+func (e *TxStateMachine) IsPendingKindSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsPendingKind()
 }
 
-func (e *TxStateMachine) SmIsPending() bool {
+func (e *TxStateMachine) IsPendingSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsPending()
 }
 
-func (e *TxStateMachine) SmIsModifyPending() bool {
+func (e *TxStateMachine) IsModifyPendingSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsModifyPending()
 }
 
-func (e *TxStateMachine) SmIsRemovePending() bool {
+func (e *TxStateMachine) IsRemovePendingSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsRemovePending()
 }
 
-func (e *TxStateMachine) SmIsActive() bool {
+func (e *TxStateMachine) IsActiveSm() bool {
 	if e == nil {
 		return false
 	}
 
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsActive()
 }
 
-func (e *TxStateMachine) SmIsCanceled() bool {
+func (e *TxStateMachine) IsCanceledSm() bool {
 	if e == nil {
 		return false
 	}
 
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsCanceled()
 }
 
-func (e *TxStateMachine) SmIsRemoved() bool {
+func (e *TxStateMachine) IsRemovedSm() bool {
 	if e == nil {
 		return false
 	}
 
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsRemoved()
 }
 
-func (e *TxStateMachine) SmSetState(newState types.TxState) error {
+// func (e *TxStateMachine) SetStateSm(newState types.TxState) error {
+// 	if e == nil {
+// 		return errors.New("not initialized")
+// 	}
+// 	if err := e.checkAndInitStateMachine(); err != nil {
+// 		return err
+// 	}
+// 	return e.stateMachine.SetState(newState)
+// }
+
+func (e *TxStateMachine) ForceStateSm(newState types.TxState) error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	return e.stateMachine.SetState(newState, e)
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return err
+	}
+	return e.stateMachine.ForceState(newState)
 }
 
-func (e *TxStateMachine) SmForceState(newState types.TxState) error {
+func (e *TxStateMachine) PendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	return e.stateMachine.ForceState(newState, e)
+	if err := e.checkAndInitStateMachineWithState(types.PendingTxState); err != nil {
+		return err
+	}
+	return e.stateMachine.SetState(types.PendingTxState)
 }
 
-func (e *TxStateMachine) SmApprove() error {
+func (e *TxStateMachine) ModifyPendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	return e.stateMachine.Approve(e)
+	if err := e.checkAndInitStateMachineWithState(types.ModifyPendingTxState); err != nil {
+		return err
+	}
+	return e.stateMachine.SetState(types.ModifyPendingTxState)
 }
 
-func (e *TxStateMachine) SmCancel() error {
+func (e *TxStateMachine) RemovePendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	return e.stateMachine.Cancel(e)
+	if err := e.checkAndInitStateMachineWithState(types.RemovePendingTxState); err != nil {
+		return err
+	}
+	return e.stateMachine.SetState(types.RemovePendingTxState)
+}
+
+func (e *TxStateMachine) InactivePendingSm() error {
+	if e == nil {
+		return errors.New("not initialized")
+	}
+	if err := e.checkAndInitStateMachineWithState(types.InactivePendingTxState); err != nil {
+		return err
+	}
+	return e.stateMachine.SetState(types.InactivePendingTxState)
+}
+
+func (e *TxStateMachine) ActivePendingSm() error {
+	if e == nil {
+		return errors.New("not initialized")
+	}
+	if err := e.checkAndInitStateMachineWithState(types.ActivePendingTxState); err != nil {
+		return err
+	}
+	return e.stateMachine.SetState(types.ActivePendingTxState)
+}
+func (e *TxStateMachine) ApproveSm() error {
+	if e == nil {
+		return errors.New("not initialized")
+	}
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return err
+	}
+	return e.stateMachine.Approve()
+}
+
+func (e *TxStateMachine) CancelSm() error {
+	if e == nil {
+		return errors.New("not initialized")
+	}
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return err
+	}
+	return e.stateMachine.Cancel()
 }
 
 // checkAndInitStateMachine check and initialize e.stateMachine.
 // It initialize e.stateMachine with InactiveTxState if e.State is invalid.
-func (e *TxStateMachine) checkAndInitStateMachine() {
+func (e *TxStateMachine) checkAndInitStateMachine() error {
+	return e.checkAndInitStateMachineWithState(e.State)
+}
+func (e *TxStateMachine) checkAndInitStateMachineWithState(s types.TxState) error {
 	if e == nil {
-		return
+		return errors.New("not initialized")
 	}
 
 	if e.stateMachine == nil {
 		var err error
-		e.stateMachine, err = internal.NewTxStateMachine(e.State, e)
+		e.stateMachine, err = internal.NewTxStateMachine(s, e)
 		if err != nil {
-			e.State = types.InactiveTxState
-			e.stateMachine, _ = internal.NewTxStateMachine(types.InactiveTxState, e)
-			return
+			return err
 		}
 	}
+	return nil
 }

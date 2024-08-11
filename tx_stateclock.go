@@ -19,26 +19,30 @@ type StateClock struct {
 	UpdatedAt *time.Time `gorm:"<-;index:idx_updated_at" json:"updated_at,omitempty"`
 }
 
-// SetState sets newState to underlying State. It implements state.OnTxStateChanged function.
-// Avoid calling this method directly.
-func (e *StateClock) SetState(newState types.TxState) error {
+// AssignState sets newState to underlying State. It implements state.OnTxStateChanged function.
+// DO NOT CALL this method directly.
+func (e *StateClock) AssignState(newState types.TxState) error {
 	e.State = newState
 	return nil
 }
 
-func (e *StateClock) EqualStateSm(s types.TxState) bool {
+func (e *StateClock) EqualSm(s types.TxState) bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
-	return e.stateMachine.State == s
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
+	return e.stateMachine.Equal(s)
 }
 
 func (e *StateClock) IsPendingKindSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsPendingKind()
 }
 
@@ -46,7 +50,9 @@ func (e *StateClock) IsPendingSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsPending()
 }
 
@@ -54,7 +60,9 @@ func (e *StateClock) IsModifyPendingSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsModifyPending()
 }
 
@@ -62,7 +70,9 @@ func (e *StateClock) IsRemovePendingSm() bool {
 	if e == nil {
 		return false
 	}
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsRemovePending()
 }
 
@@ -71,7 +81,9 @@ func (e *StateClock) IsActiveSm() bool {
 		return false
 	}
 
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsActive()
 }
 
@@ -80,7 +92,9 @@ func (e *StateClock) IsCanceledSm() bool {
 		return false
 	}
 
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsCanceled()
 }
 
@@ -89,29 +103,36 @@ func (e *StateClock) IsRemovedSm() bool {
 		return false
 	}
 
-	e.checkAndInitStateMachine()
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return false
+	}
 	return e.stateMachine.IsRemoved()
 }
 
-func (e *StateClock) SetStateSm(newState types.TxState) error {
-	if e == nil {
-		return errors.New("not initialized")
-	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.SetState(newState, e)
-	if err != nil {
-		return err
-	}
-	e.Tick()
-	return nil
-}
+// func (e *StateClock) SetStateSm(newState types.TxState) error {
+// 	if e == nil {
+// 		return errors.New("not initialized")
+// 	}
+// 	err := e.checkAndInitStateMachine()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = e.stateMachine.SetState(newState)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	e.Tick()
+// 	return nil
+// }
 
 func (e *StateClock) ForceStateSm(newState types.TxState) error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.ForceState(newState, e)
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return err
+	}
+	err := e.stateMachine.ForceState(newState)
 	if err != nil {
 		return err
 	}
@@ -123,8 +144,10 @@ func (e *StateClock) PendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.SetState(types.PendingTxState, e)
+	if err := e.checkAndInitStateMachineWithState(types.PendingTxState); err != nil {
+		return err
+	}
+	err := e.stateMachine.SetState(types.PendingTxState)
 	if err != nil {
 		return err
 	}
@@ -136,8 +159,10 @@ func (e *StateClock) ModifyPendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.SetState(types.ModifyPendingTxState, e)
+	if err := e.checkAndInitStateMachineWithState(types.ModifyPendingTxState); err != nil {
+		return err
+	}
+	err := e.stateMachine.SetState(types.ModifyPendingTxState)
 	if err != nil {
 		return err
 	}
@@ -149,8 +174,10 @@ func (e *StateClock) RemovePendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.SetState(types.RemovePendingTxState, e)
+	if err := e.checkAndInitStateMachineWithState(types.RemovePendingTxState); err != nil {
+		return err
+	}
+	err := e.stateMachine.SetState(types.RemovePendingTxState)
 	if err != nil {
 		return err
 	}
@@ -162,8 +189,10 @@ func (e *StateClock) InactivePendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.SetState(types.InactivePendingTxState, e)
+	if err := e.checkAndInitStateMachineWithState(types.InactivePendingTxState); err != nil {
+		return err
+	}
+	err := e.stateMachine.SetState(types.InactivePendingTxState)
 	if err != nil {
 		return err
 	}
@@ -175,8 +204,10 @@ func (e *StateClock) ActivePendingSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.SetState(types.ActivePendingTxState, e)
+	if err := e.checkAndInitStateMachineWithState(types.ActivePendingTxState); err != nil {
+		return err
+	}
+	err := e.stateMachine.SetState(types.ActivePendingTxState)
 	if err != nil {
 		return err
 	}
@@ -188,8 +219,10 @@ func (e *StateClock) ApproveSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.Approve(e)
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return err
+	}
+	err := e.stateMachine.Approve()
 	if err != nil {
 		return err
 	}
@@ -201,8 +234,10 @@ func (e *StateClock) CancelSm() error {
 	if e == nil {
 		return errors.New("not initialized")
 	}
-	e.checkAndInitStateMachine()
-	err := e.stateMachine.Cancel(e)
+	if err := e.checkAndInitStateMachine(); err != nil {
+		return err
+	}
+	err := e.stateMachine.Cancel()
 	if err != nil {
 		return err
 	}
@@ -212,20 +247,23 @@ func (e *StateClock) CancelSm() error {
 
 // checkAndInitStateMachine check and initialize e.stateMachine.
 // It initialize e.stateMachine with InactiveTxState if e.State is invalid.
-func (e *StateClock) checkAndInitStateMachine() {
+func (e *StateClock) checkAndInitStateMachine() error {
+	return e.checkAndInitStateMachineWithState(e.State)
+}
+func (e *StateClock) checkAndInitStateMachineWithState(s types.TxState) error {
 	if e == nil {
-		return
+		return errors.New("not initialized")
 	}
 
 	if e.stateMachine == nil {
 		var err error
-		e.stateMachine, err = internal.NewTxStateMachine(e.State, e)
+		e.stateMachine, err = internal.NewTxStateMachine(s, e)
 		if err != nil {
-			e.State = types.InactiveTxState
-			e.stateMachine, _ = internal.NewTxStateMachine(types.InactiveTxState, e)
-			return
+			return err
 		}
 	}
+
+	return nil
 }
 
 // Tick increments Version and set current time to CreatedAt and UpdatedAt.

@@ -12,7 +12,7 @@ type TxStateTransitioner interface {
 }
 
 type TxStateSetter interface {
-	SetState(s types.TxState) error
+	AssignState(s types.TxState) error
 }
 
 type OnTxStateChanged func(state types.TxState)
@@ -25,7 +25,8 @@ func NewTxStateMachine(initState types.TxState, setter TxStateSetter) (*TxStateM
 	}
 
 	machine := &TxStateMachine{
-		State: initState,
+		State:  initState,
+		setter: setter,
 	}
 
 	machine.m = make(map[types.TxState]TxStateTransitioner)
@@ -39,41 +40,22 @@ func NewTxStateMachine(initState types.TxState, setter TxStateSetter) (*TxStateM
 	machine.m[types.InactiveTxState] = _inactiveTxState
 	machine.m[types.ActivePendingTxState] = _activePendingTxState
 
-	err = machine.SetState(initState, setter)
+	err = machine.SetState(initState)
 	return machine, err
 }
 
-// DefaultTxStateMachine
-func DefaultTxStateMachine(setter TxStateSetter) *TxStateMachine {
-
-	machine := &TxStateMachine{
-		State: types.InactiveTxState,
-	}
-
-	machine.m = make(map[types.TxState]TxStateTransitioner)
-	machine.m[types.PendingTxState] = _pendingTxState
-	machine.m[types.ModifyPendingTxState] = _modifyPendingTxState
-	machine.m[types.ActiveTxState] = _activeTxState
-	machine.m[types.CanceledTxState] = _canceledTxState
-	machine.m[types.RemovePendingTxState] = _removePendingTxState
-	machine.m[types.RemovedTxState] = _removedTxState
-	machine.m[types.InactivePendingTxState] = _inactivePendingTxState
-	machine.m[types.InactiveTxState] = _inactiveTxState
-	machine.m[types.ActivePendingTxState] = _activePendingTxState
-
-	if setter != nil {
-		setter.SetState(machine.State)
-	}
-	return machine
-}
-
 type TxStateMachine struct {
-	State types.TxState
-	m     map[types.TxState]TxStateTransitioner
+	State  types.TxState
+	m      map[types.TxState]TxStateTransitioner
+	setter TxStateSetter
 }
 
 func (m TxStateMachine) Current() types.TxState {
 	return m.State
+}
+
+func (m TxStateMachine) Equal(v types.TxState) bool {
+	return m.State == v
 }
 
 func (m TxStateMachine) IsActive() bool {
@@ -124,63 +106,83 @@ func (m TxStateMachine) IsPendingKind() bool {
 // If newState is one of types.ModifyPendingTxState, types.RemovePendingTxState or types.InactivePendingTxState,
 // m.State should be types.ActiveTxState.
 // If newState is equal to m.State, it returns nil.
-func (m *TxStateMachine) SetState(newState types.TxState, setter TxStateSetter) error {
+func (m *TxStateMachine) SetState(newState types.TxState) error {
 	err := validateTxState(newState)
 	if err != nil {
 		return err
 	}
 
 	if newState == m.State {
-		if setter != nil {
-			return setter.SetState(newState)
+		if m.setter != nil {
+			return m.setter.AssignState(newState)
 		}
 		return nil
 	}
 
 	switch newState {
-	case types.ModifyPendingTxState, types.RemovePendingTxState, types.InactivePendingTxState:
+	case types.ModifyPendingTxState:
+		switch m.State {
+		case types.ActiveTxState:
+		case types.PendingTxState:
+			return nil
+		default:
+			return errors.New("unable to set state")
+		}
+	case types.RemovePendingTxState:
 		switch m.State {
 		case types.ActiveTxState:
 		default:
-			return nil
+			return errors.New("unable to set state")
+		}
+	case types.InactivePendingTxState:
+		switch m.State {
+		case types.ActiveTxState:
+		default:
+			return errors.New("unable to set state")
 		}
 	case types.ActivePendingTxState:
 		switch m.State {
 		case types.InactiveTxState:
 		default:
-			return nil
+			return errors.New("unable to set state")
 		}
+	case types.PendingTxState:
+		if string(m.State) != "" {
+			return errors.New("unable to set state")
+		}
+	default:
+		return errors.New("unable to set state")
 	}
 
 	m.State = newState
-	if setter != nil {
-		return setter.SetState(newState)
+	if m.setter != nil {
+		return m.setter.AssignState(newState)
 	}
 	return nil
 }
 
-func (m *TxStateMachine) ForceState(newState types.TxState, setter TxStateSetter) error {
+func (m *TxStateMachine) ForceState(newState types.TxState) error {
 	err := validateTxState(newState)
 	if err != nil {
 		return err
 	}
 
 	m.State = newState
-	if setter != nil {
-		return setter.SetState(newState)
+	if m.setter != nil {
+		return m.setter.AssignState(newState)
 	}
 	return nil
 }
 
-func (m *TxStateMachine) Approve(setter TxStateSetter) error {
+func (m *TxStateMachine) Approve() error {
 	if v, ok := m.m[m.State]; ok {
 		next, err := v.Approve()
 		if err != nil {
 			return err
 		}
 		m.State = next
-		if setter != nil {
-			return setter.SetState(m.State)
+		if m.setter != nil {
+			return m.setter.AssignState(m.State)
 		}
 		return nil
 	}
@@ -188,15 +190,15 @@ func (m *TxStateMachine) Approve(setter TxStateSetter) error {
 	return errors.New("current state was not initialized")
 }
 
-func (m *TxStateMachine) Cancel(setter TxStateSetter) error {
+func (m *TxStateMachine) Cancel() error {
 	if v, ok := m.m[m.State]; ok {
 		next, err := v.Cancel()
 		if err != nil {
 			return err
 		}
 		m.State = next
-		if setter != nil {
-			return setter.SetState(m.State)
+		if m.setter != nil {
+			return m.setter.AssignState(m.State)
 		}
 		return nil
 	}

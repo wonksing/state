@@ -12,7 +12,7 @@ import (
 func Test_TxState_SetState_when_empty(t *testing.T) {
 	m, _ := internal.NewTxStateMachine(types.ActiveTxState, nil)
 	m.State = ""
-	err := m.SetState(types.PendingTxState, nil)
+	err := m.SetState(types.PendingTxState)
 	require.Nil(t, err)
 }
 
@@ -25,19 +25,17 @@ func Test_TxStateMachine(t *testing.T) {
 	m, err := internal.NewTxStateMachine(types.PendingTxState, nil)
 	require.Nil(t, err)
 
-	err = m.SetState(types.ModifyPendingTxState, nil)
+	err = m.SetState(types.ModifyPendingTxState)
 	require.Nil(t, err)
 	require.EqualValues(t, types.PendingTxState, m.State)
 
-	err = m.SetState(types.RemovePendingTxState, nil)
-	require.Nil(t, err)
-	require.EqualValues(t, types.PendingTxState, m.State)
+	err = m.SetState(types.RemovePendingTxState)
+	require.NotNil(t, err)
 
-	err = m.SetState(types.InactivePendingTxState, nil)
-	require.Nil(t, err)
-	require.EqualValues(t, types.PendingTxState, m.State)
+	err = m.SetState(types.InactivePendingTxState)
+	require.NotNil(t, err)
 
-	err = m.ForceState(types.InactivePendingTxState, nil)
+	err = m.ForceState(types.InactivePendingTxState)
 	require.Nil(t, err)
 	require.EqualValues(t, types.InactivePendingTxState, m.State)
 }
@@ -65,6 +63,7 @@ func Test_DefaultState(t *testing.T) {
 	require.EqualValues(t, types.ActiveTxState, e.State)
 	require.EqualValues(t, e.State, e.StateMachine.State)
 
+	e.StateMachine.ForceState(types.PendingTxState)
 	e.SetMachineState(types.PendingTxState)
 	require.EqualValues(t, types.PendingTxState, e.State)
 	require.EqualValues(t, e.State, e.StateMachine.State)
@@ -118,21 +117,21 @@ func (e *testEntity) String() string {
 	return string(b)
 }
 
-func (e *testEntity) SetState(s types.TxState) error {
+func (e *testEntity) AssignState(s types.TxState) error {
 	e.State = s
 	// e.StateMachine.SetState(s)
 	return nil
 }
 
 func (e *testEntity) SetMachineState(s types.TxState) {
-	e.StateMachine.SetState(s, e)
+	e.StateMachine.SetState(s)
 	// e.SetState(s)
 }
 
 func (e *testEntity) Approve() error {
-	return e.StateMachine.Approve(e)
+	return e.StateMachine.Approve()
 }
 
 func (e *testEntity) Cancel() error {
-	return e.StateMachine.Cancel(e)
+	return e.StateMachine.Cancel()
 }
