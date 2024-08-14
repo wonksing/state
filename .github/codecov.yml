@@ -1,0 +1,23 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+ignore:
+  # Tests and test related files.
+  - "tests"
+  - "**/tests"
+  - "**/tests/data"
+  - "**/*_test.go"
+  - "**/*.pb.go"
+  # Other submodules.
+  - "cmd"
+  - "example"
+  - "experimental"
+  # Documentation
+  - "docs"
+comment:
+  layout: "header, diff, files"
