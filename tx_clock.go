@@ -27,6 +27,6 @@ func (e *TxClock) Tick() {
 	e.UpdatedAt = &now
 }
 
-func (e *TxClock) ResetTick() {
+func (e *TxClock) ResetTicked() {
 	e.VersionTicked = false
 }

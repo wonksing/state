@@ -282,6 +282,6 @@ func (e *StateClock) Tick() {
 	e.UpdatedAt = &now
 }
 
-func (e *StateClock) ResetTick() {
+func (e *StateClock) ResetTicked() {
 	e.VersionTicked = false
 }
