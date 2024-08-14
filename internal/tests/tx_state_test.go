@@ -117,7 +117,7 @@ func (e *testEntity) String() string {
 	return string(b)
 }
 
-func (e *testEntity) AssignState(s types.TxState) error {
+func (e *testEntity) AssignStateCallback(s types.TxState) error {
 	e.State = s
 	// e.StateMachine.SetState(s)
 	return nil

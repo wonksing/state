@@ -12,9 +12,9 @@ type TxStateMachine struct {
 	stateMachine *internal.TxStateMachine `gorm:"-:all" json:"-"`
 }
 
-// AssignState sets newState to underlying State. It implements state.OnTxStateChanged function.
-// DO NOT CALL this method directly.
-func (e *TxStateMachine) AssignState(newState types.TxState) error {
+// AssignStateCallback sets newState to underlying State. It implements internal.TxStateAssignor interface.
+// DO NOT CALL THIS METHOD DIRECTLY.
+func (e *TxStateMachine) AssignStateCallback(newState types.TxState) error {
 	e.State = newState
 	return nil
 }
@@ -192,8 +192,14 @@ func (e *TxStateMachine) CancelSm() error {
 }
 
 // checkAndInitStateMachine check and initialize e.stateMachine.
-// It initialize e.stateMachine with InactiveTxState if e.State is invalid.
+// It initializes e.stateMachine with PendingTxState if e.State is empty.
 func (e *TxStateMachine) checkAndInitStateMachine() error {
+	if e == nil {
+		return errors.New("not initialized")
+	}
+	if e.State == "" {
+		e.State = types.PendingTxState
+	}
 	return e.checkAndInitStateMachineWithState(e.State)
 }
 func (e *TxStateMachine) checkAndInitStateMachineWithState(s types.TxState) error {

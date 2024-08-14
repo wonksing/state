@@ -11,14 +11,12 @@ type TxStateTransitioner interface {
 	Cancel() (next types.TxState, err error)
 }
 
-type TxStateSetter interface {
-	AssignState(s types.TxState) error
+type TxStateAssignor interface {
+	AssignStateCallback(s types.TxState) error
 }
 
-type OnTxStateChanged func(state types.TxState)
-
 // NewTxStateMachine
-func NewTxStateMachine(initState types.TxState, setter TxStateSetter) (*TxStateMachine, error) {
+func NewTxStateMachine(initState types.TxState, setter TxStateAssignor) (*TxStateMachine, error) {
 	err := validateTxState(initState)
 	if err != nil {
 		return nil, err
@@ -47,7 +45,7 @@ func NewTxStateMachine(initState types.TxState, setter TxStateSetter) (*TxStateM
 type TxStateMachine struct {
 	State  types.TxState
 	m      map[types.TxState]TxStateTransitioner
-	setter TxStateSetter
+	setter TxStateAssignor
 }
 
 func (m TxStateMachine) Current() types.TxState {
@@ -114,7 +112,7 @@ func (m *TxStateMachine) SetState(newState types.TxState) error {
 
 	if newState == m.State {
 		if m.setter != nil {
-			return m.setter.AssignState(newState)
+			return m.setter.AssignStateCallback(newState)
 		}
 		return nil
 	}
@@ -156,7 +154,7 @@ func (m *TxStateMachine) SetState(newState types.TxState) error {
 
 	m.State = newState
 	if m.setter != nil {
-		return m.setter.AssignState(newState)
+		return m.setter.AssignStateCallback(newState)
 	}
 	return nil
 }
@@ -169,7 +167,7 @@ func (m *TxStateMachine) ForceState(newState types.TxState) error {
 
 	m.State = newState
 	if m.setter != nil {
-		return m.setter.AssignState(newState)
+		return m.setter.AssignStateCallback(newState)
 	}
 	return nil
 }
@@ -182,7 +180,7 @@ func (m *TxStateMachine) Approve() error {
 		}
 		m.State = next
 		if m.setter != nil {
-			return m.setter.AssignState(m.State)
+			return m.setter.AssignStateCallback(m.State)
 		}
 		return nil
 	}
@@ -198,7 +196,7 @@ func (m *TxStateMachine) Cancel() error {
 		}
 		m.State = next
 		if m.setter != nil {
-			return m.setter.AssignState(m.State)
+			return m.setter.AssignStateCallback(m.State)
 		}
 		return nil
 	}
