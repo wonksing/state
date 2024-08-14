@@ -35,5 +35,5 @@ func main() {
 
 type Person struct {
 	Name string `json:"name,omitempty"`
-	state.StateClock
+	state.TxStateMachineClock
 }
