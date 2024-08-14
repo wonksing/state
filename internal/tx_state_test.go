@@ -1,28 +1,27 @@
-package txstate_test
+package internal
 
 import (
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	internal "github.com/wonksing/state/internal"
 	"github.com/wonksing/state/types"
 )
 
 func Test_TxState_SetState_when_empty(t *testing.T) {
-	m, _ := internal.NewTxStateMachine(types.ActiveTxState, nil)
+	m, _ := NewTxStateMachine(types.ActiveTxState, nil)
 	m.State = ""
 	err := m.SetState(types.PendingTxState)
 	require.Nil(t, err)
 }
 
 func Test_TxStateValidate(t *testing.T) {
-	_, err := internal.NewTxStateMachine(types.TxState("a"), nil)
+	_, err := NewTxStateMachine(types.TxState("a"), nil)
 	require.NotNil(t, err)
 }
 
 func Test_TxStateMachine(t *testing.T) {
-	m, err := internal.NewTxStateMachine(types.PendingTxState, nil)
+	m, err := NewTxStateMachine(types.PendingTxState, nil)
 	require.Nil(t, err)
 
 	err = m.SetState(types.ModifyPendingTxState)
@@ -103,12 +102,12 @@ func Test_DefaultState(t *testing.T) {
 
 type testEntity struct {
 	State        types.TxState
-	StateMachine *internal.TxStateMachine
+	StateMachine *TxStateMachine
 }
 
 func newTestEntity() *testEntity {
 	e := testEntity{}
-	e.StateMachine, _ = internal.NewTxStateMachine(types.PendingTxState, &e)
+	e.StateMachine, _ = NewTxStateMachine(types.PendingTxState, &e)
 	return &e
 }
 
