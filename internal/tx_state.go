@@ -9,12 +9,12 @@ import (
 var (
 	_pendingTxState         = newPendingTxState(types.ActiveTxState, types.CanceledTxState)
 	_modifyPendingTxState   = newModifyPendingTxState(types.ActiveTxState, types.ActiveTxState)
-	_activeTxState          = newActiveTxState(types.ActiveTxState, types.CanceledTxState)
-	_canceledTxState        = newCanceledTxState(types.CanceledTxState, types.CanceledTxState)
+	_activeTxState          = newActiveTxState()
+	_canceledTxState        = newCanceledTxState()
 	_removePendingTxState   = newRemovePendingTxState(types.RemovedTxState, types.ActiveTxState)
-	_removedTxState         = newRemovedTxState(types.RemovedTxState, types.RemovedTxState)
+	_removedTxState         = newRemovedTxState()
 	_inactivePendingTxState = newInactivePendingTxState(types.InactiveTxState, types.ActiveTxState)
-	_inactiveTxState        = newInactiveTxState(types.InactiveTxState, types.InactiveTxState)
+	_inactiveTxState        = newInactiveTxState()
 	_activePendingTxState   = newActivePendingTxState(types.ActiveTxState, types.InactiveTxState)
 )
 
@@ -66,16 +66,11 @@ func (s *modifyPendingTxState) Cancel() (next types.TxState, err error) {
 }
 
 // newActiveTxState
-func newActiveTxState(approved, canceled types.TxState) *activeTxState {
-	return &activeTxState{
-		approvedState: approved,
-		canceledState: canceled,
-	}
+func newActiveTxState() *activeTxState {
+	return &activeTxState{}
 }
 
 type activeTxState struct {
-	approvedState types.TxState
-	canceledState types.TxState
 }
 
 func (s *activeTxState) Approve() (next types.TxState, err error) {
@@ -91,16 +86,11 @@ func (s *activeTxState) Cancel() (next types.TxState, err error) {
 }
 
 // newCanceledTxState
-func newCanceledTxState(approved, canceled types.TxState) *canceledTxState {
-	return &canceledTxState{
-		approvedState: approved,
-		canceledState: canceled,
-	}
+func newCanceledTxState() *canceledTxState {
+	return &canceledTxState{}
 }
 
 type canceledTxState struct {
-	approvedState types.TxState
-	canceledState types.TxState
 }
 
 func (s *canceledTxState) Approve() (next types.TxState, err error) {
@@ -137,16 +127,11 @@ func (s *removePendingTxState) Cancel() (next types.TxState, err error) {
 }
 
 // newRemovedTxState
-func newRemovedTxState(approved, canceled types.TxState) *removedTxState {
-	return &removedTxState{
-		approvedState: approved,
-		canceledState: canceled,
-	}
+func newRemovedTxState() *removedTxState {
+	return &removedTxState{}
 }
 
 type removedTxState struct {
-	approvedState types.TxState
-	canceledState types.TxState
 }
 
 func (s *removedTxState) Approve() (next types.TxState, err error) {
@@ -183,16 +168,11 @@ func (s *inactivePendingTxState) Cancel() (next types.TxState, err error) {
 }
 
 // newInactiveTxState
-func newInactiveTxState(approved, canceled types.TxState) *inactiveTxState {
-	return &inactiveTxState{
-		approvedState: approved,
-		canceledState: canceled,
-	}
+func newInactiveTxState() *inactiveTxState {
+	return &inactiveTxState{}
 }
 
 type inactiveTxState struct {
-	approvedState types.TxState
-	canceledState types.TxState
 }
 
 func (s *inactiveTxState) Approve() (next types.TxState, err error) {
