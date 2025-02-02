@@ -2,7 +2,6 @@ package state
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/wonksing/state/internal"
 	"github.com/wonksing/state/types"
@@ -209,9 +208,10 @@ func (e *TxStateMachine) checkAndInitStateMachineWithState(s types.TxState) erro
 	}
 
 	if e.stateMachine == nil {
-		if e.State != "" && e.State != s {
-			return fmt.Errorf("unable to initialize stateMachine with %v", s)
+		if e.State != "" {
+			s = e.State
 		}
+
 		var err error
 		e.stateMachine, err = internal.NewTxStateMachine(s, e)
 		if err != nil {
