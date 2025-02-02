@@ -261,6 +261,9 @@ func (e *TxStateMachineClock) checkAndInitStateMachineWithState(s types.TxState)
 		return errors.New("not initialized")
 	}
 
+	if e.State != "" && e.State != s {
+		return errors.New("unable to set state(state mismatch)")
+	}
 	if e.stateMachine == nil {
 		var err error
 		e.stateMachine, err = internal.NewTxStateMachine(s, e)
