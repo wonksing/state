@@ -15,8 +15,8 @@ type TxStateMachineClock struct {
 	Version       uint64 `gorm:"column:version;type:uint" json:"version,omitempty"`
 	VersionTicked bool   `gorm:"-:all" json:"-"`
 
-	CreatedAt *time.Time `gorm:"<-:create;index:idx_created_at" json:"created_at,omitempty"`
-	UpdatedAt *time.Time `gorm:"<-;index:idx_updated_at" json:"updated_at,omitempty"`
+	CreatedAt *time.Time `gorm:"<-:create" json:"created_at,omitempty"`
+	UpdatedAt *time.Time `gorm:"<-" json:"updated_at,omitempty"`
 }
 
 // AssignStateCallback sets newState to underlying State. It implements internal.TxStateAssignor interface.
