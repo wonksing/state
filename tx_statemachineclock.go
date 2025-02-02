@@ -2,6 +2,7 @@ package state
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/wonksing/state/internal"
@@ -261,10 +262,10 @@ func (e *TxStateMachineClock) checkAndInitStateMachineWithState(s types.TxState)
 		return errors.New("not initialized")
 	}
 
-	if e.State != "" && e.State != s {
-		return errors.New("unable to set state(state mismatch)")
-	}
 	if e.stateMachine == nil {
+		if e.State != "" && e.State != s {
+			return fmt.Errorf("unable to initialize stateMachine with %v", s)
+		}
 		var err error
 		e.stateMachine, err = internal.NewTxStateMachine(s, e)
 		if err != nil {
