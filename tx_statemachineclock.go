@@ -285,7 +285,7 @@ func (e *TxStateMachineClock) Tick() {
 	e.VersionTicked = true
 	e.Version++
 
-	now := time.Now()
+	now := time.Now().Round(time.Microsecond)
 	if e.CreatedAt == nil {
 		e.CreatedAt = &now
 	}
